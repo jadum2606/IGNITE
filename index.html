@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ignite Management System (Final Layout)</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+/* ------------------------- VARIABLES & GLOBAL ------------------------- */
+:root {
+    --primary: #6db2ff;
+    --bg-dark: #111;
+    --bg-card: #1a1a1a;
+    --text-main: #f2f2f2;
+    --text-muted: #aaa;
+    --sidebar-width: 260px;
+    --global-font-size: 16px;
+}
+
+body {
+    margin: 0;
+    font-family: 'Prompt', sans-serif;
+    background: #0a0a0a;
+    color: var(--text-main);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    font-size: var(--global-font-size);
+}
+
+* { box-sizing: border-box; }
+
+/* ------------------------- SIDEBAR ------------------------- */
+.sidebar {
+    width: var(--sidebar-width);
+    background: #151515;
+    border-right: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 15px;
+    flex-shrink: 0;
+    transition: 0.3s;
+}
+
+.sidebar h2 {
+    text-align: center;
+    margin: 0 0 30px 0;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 1.4em;
+    cursor: pointer;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    margin-bottom: 8px;
+    background: transparent;
+    border-radius: 8px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.95em;
+}
+
+.menu-item:hover, .menu-item.active {
+    background: rgba(109, 178, 255, 0.15);
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* ------------------------- MAIN CONTENT ------------------------- */
+.main {
+    flex-grow: 1;
+    padding: 30px;
+    overflow-y: auto;
+    background: #0a0a0a;
+}
+
+/* DASHBOARD GRID */
+.dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-box {
+    background: var(--bg-card);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.stat-title { font-size: 0.85em; color: #888; margin-bottom: 5px; }
+.stat-value { font-size: 1.8em; font-weight: bold; }
+.green { color: #00ff88; }
+.red { color: #ff4444; }
+.blue { color: #6db2ff; }
+.gold { color: #ffd700; }
+
+/* CARDS & FORMS */
+.card {
+    background: var(--bg-card);
+    padding: 25px;
+    border-radius: 16px;
+    border: 1px solid #333;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.form-wrapper {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* NEW: SETTINGS GRID LAYOUT */
+.settings-group {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 คอลัมน์เท่ากัน */
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+/* ทำให้การ์ดใน settings-group สูงเท่ากันและจัดเนื้อหาให้สวย */
+.settings-group .card {
+    margin-bottom: 0; /* ลบ margin เดิมออกเพราะใช้ gap ของ grid แทน */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+h3 { margin-top: 0; color: var(--primary); margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+
+/* INPUTS */
+.form-group { margin-bottom: 15px; }
+label { display: block; margin-bottom: 5px; font-size: 0.9em; color: #ccc; }
+
+input, select, textarea {
+    width: 100%;
+    padding: 12px;
+    background: #0d0d0d;
+    border: 1px solid #444;
+    border-radius: 8px;
+    color: white;
+    font-family: 'Prompt', sans-serif;
+    font-size: 1em;
+    transition: 0.2s;
+}
+input:focus, textarea:focus { border-color: var(--primary); outline: none; }
+
+/* FILE UPLOAD -> เปลี่ยนเป็น input text สำหรับ URL */
+.file-upload {
+    /* Styles for the label are still here, but we'll use a simple text input */
+    padding: 0; 
+    border: none;
+    text-align: left;
+    cursor: default;
+    margin-bottom: 0;
+}
+input[type="file"] { display: none; } /* ซ่อน input type="file" เดิม */
+/* เพิ่ม style สำหรับ input type="url" หรือ "text" ที่ใช้แทน */
+
+
+/* BUTTONS */
+.btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--primary);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 1em;
+    transition: 0.2s;
+}
+.btn:hover { filter: brightness(1.1); transform: translateY(-2px); }
+.btn-del { background: #ff4444; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size:0.8em; border:none; }
+
+/* TABLE */
+.table-container { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; margin-top: 10px; min-width: 600px; }
+th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #333; }
+th { color: #888; font-weight: 400; font-size: 0.9em; }
+td { background: rgba(255,255,255,0.02); }
+tr:hover td { background: rgba(255,255,255,0.05); }
+
+.slip-preview { height: 40px; border-radius: 4px; cursor: pointer; transition: .2s; }
+.slip-preview:hover { transform: scale(2); z-index: 99; position: relative; box-shadow: 0 0 10px black; }
+
+/* SETTINGS UI */
+.settings-tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid #333; flex-wrap: wrap; gap: 5px; }
+.tab-btn {
+    padding: 10px 15px;
+    cursor: pointer;
+    background: transparent;
+    color: #888;
+    border: none;
+    font-size: 0.95em;
+    font-family: 'Prompt', sans-serif;
+    border-radius: 5px 5px 0 0;
+}
+.tab-btn:hover { background: rgba(255,255,255,0.05); }
+.tab-btn.active { color: var(--primary); border-bottom: 2px solid var(--primary); font-weight: bold; background: rgba(109, 178, 255, 0.1); }
+
+.settings-section { display: none; animation: fadeIn 0.3s; }
+.settings-section.active { display: block; }
+
+.config-row {
+    display: grid;
+    grid-template-columns: 1fr 2fr 80px;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+}
+.config-row label { margin: 0; color: var(--primary); font-size: 0.85em; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* RESPONSIVE */
+@media screen and (max-width: 1000px) {
+    /* ถ้าหน้าจอเล็กกว่า 1000px ให้กลับมาเรียงแนวตั้ง (เพื่อให้กดง่ายในมือถือ) */
+    .settings-group { grid-template-columns: 1fr; }
+}
+
+@media screen and (max-width: 768px) {
+    .sidebar { position: fixed; left: -260px; z-index: 100; height: 100%; }
+    .sidebar.open { left: 0; }
+    .main { padding: 15px; margin-left: 0; width: 100%; }
+    .mobile-toggle { display: block; position: fixed; top: 15px; right: 15px; z-index: 101; background: var(--primary); color: #000; padding: 8px 12px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+    .config-row { grid-template-columns: 1fr; gap: 5px; }
+}
+@media screen and (min-width: 769px) { .mobile-toggle { display: none; } }
+
+</style>
+</head>
+
+<body>
+
+<div class="mobile-toggle" onclick="toggleSidebar()">☰ เมนู</div>
+
+<div class="sidebar" id="sidebar">
+    <h2 id="brandName" onclick="showPage('home')">IGNITE</h2>
+    
+    <div class="menu-item active" onclick="showPage('home')">
+        <span id="lbl_home">หน้าหลัก</span>
+    </div>
+    <div class="menu-item" onclick="showPage('buy')">
+        <span id="lbl_buy">รายการซื้อเข้า</span>
+    </div>
+    <div class="menu-item" onclick="showPage('sell')">
+        <span id="lbl_sell">รายการขาย</span>
+    </div>
+    <div class="menu-item" onclick="showPage('stock')">
+        <span id="lbl_stock">สินค้าคงเหลือ</span>
+    </div>
+    <div class="menu-item" onclick="showPage('melt')">
+        <span id="lbl_melt">สินค้ารอหลอม</span>
+    </div>
+    <div class="menu-item" onclick="showPage('expense')">
+        <span id="lbl_exp">เบิกจ่าย</span>
+    </div>
+    <div class="menu-item" onclick="showPage('note')">
+        <span id="lbl_note">บันทึกช่วยจำ</span>
+    </div>
+    <div class="menu-item" onclick="showPage('summary')">
+        <span id="lbl_sum">สรุปรายเดือน</span>
+    </div>
+    
+    <div style="margin-top: auto; border-top: 1px solid #333; padding-top: 10px;">
+        <div class="menu-item" onclick="showPage('setting')">
+            <span id="lbl_set">⚙ ตั้งค่าระบบ</span>
+        </div>
+    </div>
+</div>
+
+<div class="main">
+
+    <div id="home" class="page">
+        <h3>💼 ภาพรวมกิจการ</h3>
+        <div class="dashboard-stats">
+            <div class="stat-box">
+                <span class="stat-title">💰 เงินทุนตั้งต้น</span>
+                <span class="stat-value gold" id="d_capital">0</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-title">💵 เงินสดคงเหลือ</span>
+                <span class="stat-value blue" id="d_balance">0</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-title">📈 กำไรสุทธิ</span>
+                <span class="stat-value green" id="d_profit">0</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-title">📉 รายจ่ายรวม</span>
+                <span class="stat-value red" id="d_expense">0</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📋 รายการเคลื่อนไหวล่าสุด</h3>
+            <input id="searchAll" placeholder="🔍 ค้นหา..." onkeyup="searchAllData()">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr><th>ประเภท</th><th>รายการ</th><th>ราคา/จำนวน</th><th>วันที่</th><th>สลีป</th><th>จัดการ</th></tr>
+                    </thead>
+                    <tbody id="allData"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="buy" class="page" style="display:none;">
+        <div class="card form-wrapper">
+            <h3 id="ui_buy_title">➕ บันทึกรายการซื้อเข้า</h3>
+            
+            <div class="form-group" id="grp_buy_name">
+                <label id="ui_buy_lbl_name">ชื่อสินค้า</label>
+                <input id="buyName">
+            </div>
+            
+            <div class="form-group" id="grp_buy_price">
+                <label id="ui_buy_lbl_price">ราคาซื้อ</label>
+                <input id="buyPrice" type="number">
+            </div>
+
+            <div class="form-group" id="grp_buy_date">
+                <label id="ui_buy_lbl_date">วันที่ซื้อ</label>
+                <input id="buyDate" type="date">
+            </div>
+
+            <div class="form-group" id="grp_buy_slip">
+                <label id="ui_buy_lbl_slip">แนบสลีป (URL รูปภาพ)</label>
+                <input id="buySlip" type="url" placeholder="วางลิงก์รูปภาพสลิปจาก Discord/Imgur ที่นี่">
+            </div>
+
+            <button class="btn" onclick="addTransaction('buy')">บันทึก</button>
+        </div>
+    </div>
+
+    <div id="sell" class="page" style="display:none;">
+        <div class="card form-wrapper">
+            <h3 id="ui_sell_title">💰 บันทึกรายการขาย</h3>
+            
+            <div class="form-group" id="grp_sell_name">
+                <label id="ui_sell_lbl_name">สินค้าที่ขาย</label>
+                <input id="sellName">
+            </div>
+            
+            <div class="form-group" id="grp_sell_price">
+                <label id="ui_sell_lbl_price">ราคาขาย</label>
+                <input id="sellPrice" type="number">
+            </div>
+
+            <div class="form-group" id="grp_sell_date">
+                <label id="ui_sell_lbl_date">วันที่ขาย</label>
+                <input id="sellDate" type="date">
+            </div>
+
+            <div class="form-group" id="grp_sell_slip">
+                <label id="ui_sell_lbl_slip">แนบสลีป (URL รูปภาพ)</label>
+                <input id="sellSlip" type="url" placeholder="วางลิงก์รูปภาพสลิปจาก Discord/Imgur ที่นี่">
+            </div>
+
+            <button class="btn" onclick="addTransaction('sell')">บันทึก</button>
+        </div>
+    </div>
+
+    <div id="expense" class="page" style="display:none;">
+        <div class="card form-wrapper">
+            <h3 id="ui_exp_title">📄 ลงบัญชีค่าใช้จ่าย</h3>
+            
+            <div class="form-group" id="grp_exp_name">
+                <label id="ui_exp_lbl_name">รายการค่าใช้จ่าย</label>
+                <input id="expName">
+            </div>
+            
+            <div class="form-group" id="grp_exp_price">
+                <label id="ui_exp_lbl_price">จำนวนเงิน</label>
+                <input id="expPrice" type="number">
+            </div>
+
+            <div class="form-group" id="grp_exp_date">
+                <label id="ui_exp_lbl_date">วันที่จ่าย</label>
+                <input id="expDate" type="date">
+            </div>
+
+            <div class="form-group" id="grp_exp_slip">
+                <label id="ui_exp_lbl_slip">แนบหลักฐาน (URL รูปภาพ)</label>
+                <input id="expSlip" type="url" placeholder="วางลิงก์รูปภาพสลิปจาก Discord/Imgur ที่นี่">
+            </div>
+
+            <button class="btn" onclick="addTransaction('expense')">บันทึก</button>
+        </div>
+    </div>
+
+    <div id="stock" class="page" style="display:none;">
+        <div class="card">
+            <h3>📦 สินค้าคงเหลือ</h3>
+            <input id="stockSearch" placeholder="ค้นหา..." onkeyup="renderStock()">
+            <div class="table-container">
+                <table><thead><tr><th>ชื่อสินค้า</th><th>วันที่เข้า</th><th>ทุน</th></tr></thead><tbody id="stockList"></tbody></table>
+            </div>
+        </div>
+    </div>
+
+    <div id="melt" class="page" style="display:none;">
+        <div class="card form-wrapper">
+            <h3>🔥 สินค้ารอการหลอม</h3>
+            <textarea id="meltTxt" rows="3" placeholder="รายละเอียด..."></textarea>
+            <button class="btn" onclick="addGenericItem('melts', 'meltTxt', renderMelt)">เพิ่ม</button>
+        </div>
+        <div class="card"><ul id="meltList"></ul></div>
+    </div>
+
+    <div id="note" class="page" style="display:none;">
+        <div class="card form-wrapper">
+            <h3>📝 บันทึกช่วยจำ</h3>
+            <textarea id="noteTxt" rows="3" placeholder="เขียนบันทึก..."></textarea>
+            <button class="btn" onclick="addGenericItem('notes', 'noteTxt', renderNotes)">บันทึก</button>
+        </div>
+        <div class="card"><ul id="noteList"></ul></div>
+    </div>
+
+    <div id="summary" class="page" style="display:none;">
+        <div class="card form-wrapper">
+            <h3>📊 สรุปยอดรายเดือน</h3>
+            <select id="sumMonth" onchange="calculateMonthly()"><option value="">-- เลือกเดือน --</option></select>
+            <div id="summaryResult" style="margin-top:20px;text-align:center;"></div>
+        </div>
+    </div>
+
+    <div id="setting" class="page" style="display:none;">
+        
+        <div class="settings-group">
+            
+            <div class="card" style="border: 1px solid #5865F2;">
+                <h3 style="color:#5865F2;border-color:#5865F2; font-size:1.1em;">👾 เชื่อมต่อ Discord</h3>
+                <div class="form-group">
+                    <label>Webhook URL</label>
+                    <input id="discordWebhook" placeholder="https://discord.com..." onchange="saveDiscordWebhook()">
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="font-size:1.1em;">💰 เงินทุนตั้งต้น</h3>
+                <div class="form-group">
+                    <label>จำนวนเงิน (บาท)</label>
+                    <input id="setCapital" type="number" placeholder="0.00">
+                </div>
+                <button class="btn" onclick="saveCapital()">บันทึก</button>
+            </div>
+
+            <div class="card" style="border: 1px solid #ff4444;">
+                <h3 style="color:#ff4444;border-color:#ff4444; font-size:1.1em;">⚠ จัดการข้อมูล</h3>
+                <p style="color:#aaa; font-size:0.85em; margin-bottom:auto;">ลบข้อมูลทั้งหมด (กู้คืนไม่ได้)</p>
+                <button class="btn" onclick="clearAllData()" style="background:#ff4444; margin-top:10px;">ล้างข้อมูล</button>
+            </div>
+
+        </div>
+        <div class="card">
+            <h3>⚙ ปรับแต่งระบบ</h3>
+            
+            <div class="settings-tabs">
+                <button class="tab-btn active" onclick="openTab('tab_general')">ทั่วไป</button>
+                <button class="tab-btn" onclick="openTab('tab_menu')">เมนู</button>
+                <button class="tab-btn" onclick="openTab('tab_buy')">หน้าซื้อ</button>
+                <button class="tab-btn" onclick="openTab('tab_sell')">หน้าขาย</button>
+                <button class="tab-btn" onclick="openTab('tab_exp')">เบิกจ่าย</button>
+            </div>
+
+            <div id="tab_general" class="settings-section active">
+                <div class="config-row">
+                    <label>ชื่อบริษัท (หัวข้อบน)</label>
+                    <input id="conf_brand" placeholder="เช่น Ignite">
+                    <div></div>
+                </div>
+                <div class="config-row">
+                    <label>สีธีม (Color)</label>
+                    <input id="conf_color" type="color" style="height:40px;">
+                    <div></div>
+                </div>
+                <div class="config-row">
+                    <label>ขนาดตัวอักษร (px)</label>
+                    <input id="conf_fontsize" type="number">
+                    <div></div>
+                </div>
+            </div>
+
+            <div id="tab_menu" class="settings-section">
+                <div class="config-row"><label>หน้าหลัก</label><input id="cf_m_home"><div></div></div>
+                <div class="config-row"><label>ซื้อเข้า</label><input id="cf_m_buy"><div></div></div>
+                <div class="config-row"><label>ขาย</label><input id="cf_m_sell"><div></div></div>
+                <div class="config-row"><label>สินค้าคงเหลือ</label><input id="cf_m_stock"><div></div></div>
+                <div class="config-row"><label>รอหลอม</label><input id="cf_m_melt"><div></div></div>
+                <div class="config-row"><label>เบิกจ่าย</label><input id="cf_m_exp"><div></div></div>
+                <div class="config-row"><label>บันทึก</label><input id="cf_m_note"><div></div></div>
+                <div class="config-row"><label>สรุปผล</label><input id="cf_m_sum"><div></div></div>
+            </div>
+
+            <div id="tab_buy" class="settings-section">
+                <div class="config-row"><label>หัวข้อหน้านี้</label><input id="cf_buy_title"><div></div></div>
+                <div class="config-row"><label>ป้ายกำกับชื่อสินค้า</label><input id="cf_buy_lbl_name"><div></div></div>
+                <div class="config-row"><label>ป้ายกำกับราคา</label><input id="cf_buy_lbl_price"><div></div></div>
+                <div class="config-row">
+                    <label>ป้ายกำกับวันที่</label>
+                    <input id="cf_buy_lbl_date">
+                    <label><input type="checkbox" id="cf_buy_show_date"> แสดง</label>
+                </div>
+                <div class="config-row">
+                    <label>ป้ายกำกับสลีป</label>
+                    <input id="cf_buy_lbl_slip">
+                    <label><input type="checkbox" id="cf_buy_show_slip"> แสดง</label>
+                </div>
+            </div>
+
+            <div id="tab_sell" class="settings-section">
+                <div class="config-row"><label>หัวข้อหน้านี้</label><input id="cf_sell_title"><div></div></div>
+                <div class="config-row"><label>ป้ายกำกับชื่อสินค้า</label><input id="cf_sell_lbl_name"><div></div></div>
+                <div class="config-row"><label>ป้ายกำกับราคา</label><input id="cf_sell_lbl_price"><div></div></div>
+                <div class="config-row">
+                    <label>ป้ายกำกับวันที่</label>
+                    <input id="cf_sell_lbl_date">
+                    <label><input type="checkbox" id="cf_sell_show_date"> แสดง</label>
+                </div>
+                <div class="config-row">
+                    <label>ป้ายกำกับสลีป</label>
+                    <input id="cf_sell_lbl_slip">
+                    <label><input type="checkbox" id="cf_sell_show_slip"> แสดง</label>
+                </div>
+            </div>
+
+            <div id="tab_exp" class="settings-section">
+                <div class="config-row"><label>หัวข้อหน้านี้</label><input id="cf_exp_title"><div></div></div>
+                <div class="config-row"><label>ป้ายกำกับรายการ</label><input id="cf_exp_lbl_name"><div></div></div>
+                <div class="config-row"><label>ป้ายกำกับราคา</label><input id="cf_exp_lbl_price"><div></div></div>
+                <div class="config-row">
+                    <label>ป้ายกำกับวันที่</label>
+                    <input id="cf_exp_lbl_date">
+                    <label><input type="checkbox" id="cf_exp_show_date"> แสดง</label>
+                </div>
+                <div class="config-row">
+                    <label>ป้ายกำกับสลีป</label>
+                    <input id="cf_exp_lbl_slip">
+                    <label><input type="checkbox" id="cf_exp_show_slip"> แสดง</label>
+                </div>
+            </div>
+
+            <button class="btn" onclick="saveAdvancedConfig()" style="margin-top:20px;">บันทึกการตั้งค่าทั้งหมด</button>
+            <button class="btn" onclick="resetConfig()" style="margin-top:10px; background:#444; color:#ccc;">คืนค่าเริ่มต้น</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+/* DATA STORE */
+let db = { buys: [], sells: [], expenses: [], melts: [], notes: [] };
+let capital = 0;
+let discordUrl = "";
+
+/* DEFAULT CONFIG */
+const defaultConfig = {
+    brand: "IGNITE",
+    fontSize: 16,
+    color: "#6db2ff",
+    menus: {
+        home: "หน้าหลัก", buy: "รายการซื้อเข้า", sell: "รายการขาย",
+        stock: "สินค้าคงเหลือ", melt: "สินค้ารอหลอม", exp: "เบิกจ่าย",
+        note: "บันทึกช่วยจำ", sum: "สรุปรายเดือน"
+    },
+    pages: {
+        buy: {
+            title: "➕ บันทึกรายการซื้อเข้า",
+            labels: { name: "ชื่อสินค้า / รุ่น / ยี่ห้อ", price: "ราคาซื้อ (บาท)", date: "วันที่ซื้อ", slip: "แนบสลีปการโอน" },
+            show: { date: true, slip: true }
+        },
+        sell: {
+            title: "💰 บันทึกรายการขาย",
+            labels: { name: "สินค้าที่ขาย", price: "ราคาขาย (บาท)", date: "วันที่ขาย", slip: "แนบสลีปรับเงิน" },
+            show: { date: true, slip: true }
+        },
+        expense: {
+            title: "📄 ลงบัญชีค่าใช้จ่าย",
+            labels: { name: "รายการค่าใช้จ่าย", price: "จำนวนเงิน (บาท)", date: "วันที่จ่าย", slip: "แนบหลักฐาน" },
+            show: { date: true, slip: true }
+        }
+    }
+};
+
+let config = {};
+
+// =========================================================================
+// !!! NEW: GOOGLE APPS SCRIPT INTEGRATION !!!
+// =========================================================================
+
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby3HWSzWQm3RXatrivBoY59cTUpnz02qcOSoIw-dwEpMMb-p8-6pYwmlKgHIpqEGUdK/exec';
+
+// Asynchronous function to handle all communication with the Apps Script API
+async function fetchDataFromSheet(action, payload = {}) {
+    try {
+        const response = await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action, payload })
+        });
+        const result = await response.json();
+        
+        if (result.status !== 200) {
+            // Throwing an error for non-200 status
+            throw new Error(result.message || "เกิดข้อผิดพลาดในการเชื่อมต่อ Apps Script");
+        }
+        return result.data;
+
+    } catch (e) {
+        console.error(`Sheet API Error (Action: ${action}):`, e);
+        alert(`⚠️ ข้อผิดพลาดในการเชื่อมต่อ Google Sheet หรือ API: ${e.message}`);
+        return null; // Return null on failure
+    }
+}
+
+
+/* INIT (MODIFIED FOR SHEET) */
+async function loadData() {
+    // --- 1. Load generic local data (melts, notes) (Still Local Storage)
+    db.melts = JSON.parse(localStorage.getItem("melts") || "[]");
+    db.notes = JSON.parse(localStorage.getItem("notes") || "[]");
+
+    // --- 2. Load Config/Capital/Discord from Sheet (Async Call)
+    const configData = await fetchDataFromSheet('GET_CONFIG');
+    if (configData) {
+        capital = Number(configData.CAPITAL) || 0;
+        discordUrl = configData.DISCORD_WEBHOOK || "";
+    } else {
+        // Fallback if config fails to load from sheet (using default/old local value)
+        capital = Number(localStorage.getItem("capital") || 0);
+        discordUrl = localStorage.getItem("discordWebhook") || "";
+    }
+    
+    // UI Config is still stored locally for quick saving/retrieval
+    let savedConfig = localStorage.getItem("config"); 
+    if(savedConfig) {
+        config = JSON.parse(savedConfig);
+        if(!config.pages || !config.menus) config = JSON.parse(JSON.stringify(defaultConfig));
+    } else {
+        config = JSON.parse(JSON.stringify(defaultConfig));
+    }
+    
+    // --- 3. Load Transactional Data from Sheet (Async Call)
+    const allData = await fetchDataFromSheet('GET_ALL_DATA');
+    if (allData) {
+        // Map data from Sheet format to local db format (Type and SlipURL are changed)
+        db.buys = allData.Buys.map(x => ({ ...x, type: 'ซื้อเข้า', SlipURL: x.SlipURL }));
+        db.sells = allData.Sells.map(x => ({ ...x, type: 'ขาย', SlipURL: x.SlipURL }));
+        db.expenses = allData.Expenses.map(x => ({ ...x, type: 'เบิกจ่าย', SlipURL: x.SlipURL }));
+    } else {
+         // Fallback if transaction data fails to load (empty array)
+         db.buys = [];
+         db.sells = [];
+         db.expenses = [];
+    }
+
+    // --- 4. Final steps
+    applyConfig();
+    updateDashboard();
+    renderStock();
+    renderMelt();
+    renderNotes();
+    
+    document.getElementById("setCapital").value = capital;
+    document.getElementById("discordWebhook").value = discordUrl;
+    loadConfigToInputs();
+}
+
+function saveToLocal() {
+    // *** WARNING: This function only saves melts, notes, and UI config locally. ***
+    // *** CAPITAL, DISCORD URL, and Transactions are saved to Google Sheet via other functions. ***
+    localStorage.setItem("melts", JSON.stringify(db.melts));
+    localStorage.setItem("notes", JSON.stringify(db.notes));
+    localStorage.setItem("config", JSON.stringify(config));
+    // updateDashboard() is now called after each successful async sheet operation
+}
+
+async function saveDiscordWebhook() { // Made async
+    discordUrl = document.getElementById("discordWebhook").value;
+    
+    const payload = { key: 'DISCORD_WEBHOOK', value: discordUrl };
+    const result = await fetchDataFromSheet('SET_CONFIG', payload);
+
+    if(result) {
+        alert("บันทึก Discord Webhook เรียบร้อย! ลองทดสอบทำรายการดูนะครับ");
+    }
+}
+
+function clearAllData() {
+    if(confirm("ยืนยันการลบข้อมูล 'ทั้งหมด' ?\n\n**ข้อควรทราบ:** การกระทำนี้จะล้างข้อมูลรายการ (ซื้อ/ขาย/จ่าย) ใน Google Sheet ของคุณทั้งหมด")) {
+        sendToDiscord("⚠ แจ้งเตือนความปลอดภัย", "มีการกดปุ่มล้างข้อมูลทั้งหมดในระบบ!", 16711680); // Red
+        
+        // Reset local data (melts/notes) and transactional data from memory
+        db.melts = [];
+        db.notes = [];
+        db.buys = [];
+        db.sells = [];
+        db.expenses = [];
+        
+        // Only save local changes (melts/notes/config) to clear local storage
+        localStorage.setItem("melts", "[]");
+        localStorage.setItem("notes", "[]");
+        
+        alert("⚠ ล้างข้อมูลในเครื่อง (บันทึกช่วยจำ/รอหลอม) เรียบร้อยแล้ว\n\n**สำคัญมาก:** หากต้องการลบรายการซื้อ/ขาย/จ่าย ใน Google Sheet คุณต้องไปลบข้อมูลทั้งหมดด้วยตนเอง (ลบแถวที่ 2 เป็นต้นไป ในแท็บ Buys, Sells, Expenses, Config)");
+        window.location.reload(); // Reload to reflect changes
+    }
+}
+
+/* -------------------- SETTINGS LOGIC (Modified saveCapital) -------------------- */
+function openTab(tabId) {
+    document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    event.target.classList.add('active');
+}
+
+function loadConfigToInputs() {
+    document.getElementById("conf_brand").value = config.brand;
+    document.getElementById("conf_fontsize").value = config.fontSize;
+    document.getElementById("conf_color").value = config.color;
+    document.getElementById("cf_m_home").value = config.menus.home;
+    document.getElementById("cf_m_buy").value = config.menus.buy;
+    document.getElementById("cf_m_sell").value = config.menus.sell;
+    document.getElementById("cf_m_stock").value = config.menus.stock;
+    document.getElementById("cf_m_melt").value = config.menus.melt;
+    document.getElementById("cf_m_exp").value = config.menus.exp;
+    document.getElementById("cf_m_note").value = config.menus.note;
+    document.getElementById("cf_m_sum").value = config.menus.sum;
+
+    const loadPage = (key, prefix) => {
+        const p = config.pages[key];
+        document.getElementById(`cf_${prefix}_title`).value = p.title;
+        document.getElementById(`cf_${prefix}_lbl_name`).value = p.labels.name;
+        document.getElementById(`cf_${prefix}_lbl_price`).value = p.labels.price;
+        document.getElementById(`cf_${prefix}_lbl_date`).value = p.labels.date;
+        document.getElementById(`cf_${prefix}_show_date`).checked = p.show.date;
+        document.getElementById(`cf_${prefix}_lbl_slip`).value = p.labels.slip;
+        document.getElementById(`cf_${prefix}_show_slip`).checked = p.show.slip;
+    };
+    loadPage('buy', 'buy');
+    loadPage('sell', 'sell');
+    loadPage('expense', 'exp');
+}
+
+function saveAdvancedConfig() {
+    config.brand = document.getElementById("conf_brand").value;
+    config.fontSize = document.getElementById("conf_fontsize").value;
+    config.color = document.getElementById("conf_color").value;
+    config.menus.home = document.getElementById("cf_m_home").value;
+    config.menus.buy = document.getElementById("cf_m_buy").value;
+    config.menus.sell = document.getElementById("cf_m_sell").value;
+    config.menus.stock = document.getElementById("cf_m_stock").value;
+    config.menus.melt = document.getElementById("cf_m_melt").value;
+    config.menus.exp = document.getElementById("cf_m_exp").value;
+    config.menus.note = document.getElementById("cf_m_note").value;
+    config.menus.sum = document.getElementById("cf_m_sum").value;
+
+    const savePage = (key, prefix) => {
+        config.pages[key].title = document.getElementById(`cf_${prefix}_title`).value;
+        config.pages[key].labels.name = document.getElementById(`cf_${prefix}_lbl_name`).value;
+        config.pages[key].labels.price = document.getElementById(`cf_${prefix}_lbl_price`).value;
+        config.pages[key].labels.date = document.getElementById(`cf_${prefix}_lbl_date`).value;
+        config.pages[key].show.date = document.getElementById(`cf_${prefix}_show_date`).checked;
+        config.pages[key].labels.slip = document.getElementById(`cf_${prefix}_lbl_slip`).value;
+        config.pages[key].show.slip = document.getElementById(`cf_${prefix}_show_slip`).checked;
+    };
+    savePage('buy', 'buy');
+    savePage('sell', 'sell');
+    savePage('expense', 'exp');
+
+    saveToLocal(); // Save UI Config locally
+    applyConfig();
+    alert("บันทึกการตั้งค่าแล้ว!");
+}
+
+function applyConfig() {
+    document.documentElement.style.setProperty('--primary', config.color);
+    document.documentElement.style.setProperty('--global-font-size', config.fontSize + 'px');
+    document.getElementById("brandName").innerText = config.brand;
+
+    document.getElementById("lbl_home").innerText = config.menus.home;
+    document.getElementById("lbl_buy").innerText = config.menus.buy;
+    document.getElementById("lbl_sell").innerText = config.menus.sell;
+    document.getElementById("lbl_stock").innerText = config.menus.stock;
+    document.getElementById("lbl_melt").innerText = config.menus.melt;
+    document.getElementById("lbl_exp").innerText = config.menus.exp;
+    document.getElementById("lbl_note").innerText = config.menus.note;
+    document.getElementById("lbl_sum").innerText = config.menus.sum;
+
+    const applyPage = (key, prefix) => {
+        const p = config.pages[key];
+        document.getElementById(`ui_${prefix}_title`).innerText = p.title;
+        document.getElementById(`ui_${prefix}_lbl_name`).innerText = p.labels.name;
+        document.getElementById(`ui_${prefix}_lbl_price`).innerText = p.labels.price;
+        document.getElementById(`${prefix}Name`).placeholder = p.labels.name;
+        
+        document.getElementById(`ui_${prefix}_lbl_date`).innerText = p.labels.date;
+        document.getElementById(`grp_${prefix}_date`).style.display = p.show.date ? "block" : "none";
+
+        document.getElementById(`ui_${prefix}_lbl_slip`).innerText = p.labels.slip + " (URL รูปภาพ)"; // Add URL Note
+        document.getElementById(`grp_${prefix}_slip`).style.display = p.show.slip ? "block" : "none";
+    };
+    applyPage('buy', 'buy');
+    applyPage('sell', 'sell');
+    applyPage('expense', 'exp');
+}
+
+function resetConfig() {
+    if(confirm("รีเซ็ตการตั้งค่าทั้งหมด?")) {
+        config = JSON.parse(JSON.stringify(defaultConfig));
+        saveToLocal();
+        loadConfigToInputs();
+        applyConfig();
+    }
+}
+
+/* -------------------- CORE APP LOGIC -------------------- */
+function showPage(pageId) {
+    document.querySelectorAll(".page").forEach(p => p.style.display = "none");
+    document.getElementById(pageId).style.display = "block";
+    if(window.innerWidth <= 768) toggleSidebar(false);
+}
+function toggleSidebar(forceState) {
+    const sb = document.getElementById("sidebar");
+    if(forceState === false) sb.classList.remove("open");
+    else sb.classList.toggle("open");
+}
+
+async function saveCapital() { // Made async
+    capital = Number(document.getElementById("setCapital").value);
+    
+    const payload = { key: 'CAPITAL', value: capital };
+    const result = await fetchDataFromSheet('SET_CONFIG', payload);
+    
+    if(result) {
+        alert("บันทึกเงินทุนแล้ว");
+        updateDashboard();
+    }
+}
+
+// REMOVED: previewFile is no longer relevant as we use URL text input.
+function previewFile(inputId, nameSpanId) {
+    // This function is now OBSOLETE as we use URL text input.
+}
+// REMOVED: getBase64 is no longer relevant.
+
+
+async function addTransaction(type) { // Made async
+    const ids = {
+        buy: { name: 'buyName', price: 'buyPrice', date: 'buyDate', slip: 'buySlip' },
+        sell: { name: 'sellName', price: 'sellPrice', date: 'sellDate', slip: 'sellSlip' },
+        expense: { name: 'expName', price: 'expPrice', date: 'expDate', slip: 'expSlip' }
+    };
+    const fields = ids[type];
+    const name = document.getElementById(fields.name).value;
+    const price = Number(document.getElementById(fields.price).value);
+    
+    let date = document.getElementById(fields.date).value;
+    const isDateHidden = document.getElementById(`grp_${type}_date`).style.display === 'none';
+    if(isDateHidden && !date) date = new Date().toISOString().split('T')[0];
+
+    if(!name || !price || (!isDateHidden && !date)) {
+        alert("กรุณากรอกข้อมูลให้ครบ");
+        return;
+    }
+
+    // Get Slip URL from the text input
+    let slipUrl = document.getElementById(fields.slip).value;
+
+    let labelMap = { buy:"ซื้อเข้า", sell:"ขาย", expense:"เบิกจ่าย" };
+    let discordColor = { buy: 3447003, sell: 5763719, expense: 15548997 }; // Blue, Green, Red
+    
+    // --- New Logic: Send to Sheet API ---
+    const payload = {
+        type: type.charAt(0).toUpperCase() + type.slice(1) + 's', // Buys, Sells, Expenses
+        operatorName: 'Web User', 
+        name: name,
+        price: price,
+        date: date,
+        slipUrl: slipUrl
+    };
+    
+    const result = await fetchDataFromSheet('ADD_TRANSACTION', payload);
+
+    if(result) {
+        // Notify Discord
+        let msg = `รายการ: ${name}\nราคา: ${price.toLocaleString()} บาท\nวันที่: ${date}`;
+        await sendToDiscord(`🔔 ทำรายการ ${labelMap[type]}`, msg, discordColor[type]);
+        
+        alert("บันทึกสำเร็จ!");
+        
+        // Reload data after successful transaction
+        await loadData();
+
+        // Clear forms
+        document.getElementById(fields.name).value = "";
+        document.getElementById(fields.price).value = "";
+        document.getElementById(fields.date).value = ""; 
+        document.getElementById(fields.slip).value = ""; 
+        showPage('home');
+    }
+}
+
+async function deleteTransaction(rowIndex) { // Now accepts rowIndex (Sheet row number)
+    if(!confirm("ต้องการลบรายการนี้ใช่หรือไม่?")) return;
+    
+    // Find item details from local memory for Discord log
+    let item = [...db.buys, ...db.sells, ...db.expenses].find(x => x.rowIndex == rowIndex);
+    
+    if(item) {
+        const sheetType = item.type === 'ซื้อเข้า' ? 'Buys' : (item.type === 'ขาย' ? 'Sells' : 'Expenses');
+        
+        const payload = { type: sheetType, rowIndex: rowIndex };
+        const result = await fetchDataFromSheet('DELETE_ROW', payload);
+        
+        if(result) {
+            sendToDiscord("⚠ มีการลบรายการ", `ลบ: ${item.name}\nยอดเงิน: ${item.price.toLocaleString()}\nประเภท: ${item.type}`, 16711680); // Red Warning
+            alert("ลบรายการสำเร็จ!");
+            await loadData(); // Reload data after successful deletion
+        }
+    } else {
+        alert("ไม่พบรายการนี้ในหน่วยความจำ");
+    }
+}
+
+function addGenericItem(arr, id, render) {
+    let val = document.getElementById(id).value;
+    if(!val) return;
+    db[arr].push(val);
+    saveToLocal(); // Save locally for melts/notes
+    sendToDiscord("📝 บันทึก/หลอม", `เพิ่มรายการ: ${val}`, 16776960); // Yellow
+    document.getElementById(id).value="";
+    render();
+}
+
+function updateDashboard() {
+    let b = db.buys.reduce((a,x)=>a+x.price,0);
+    let s = db.sells.reduce((a,x)=>a+x.price,0);
+    let e = db.expenses.reduce((a,x)=>a+x.price,0);
+    
+    let bal = capital + s - b - e;
+    let prof = s - b - e;
+
+    document.getElementById("d_capital").innerText = capital.toLocaleString();
+    document.getElementById("d_balance").innerText = bal.toLocaleString();
+    document.getElementById("d_profit").innerText = prof.toLocaleString();
+    document.getElementById("d_profit").className = "stat-value " + (prof>=0?"green":"red");
+    document.getElementById("d_expense").innerText = e.toLocaleString();
+
+    // The data coming from Sheets is not guaranteed to have Date object for sorting
+    let all = [...db.buys, ...db.sells, ...db.expenses].sort((x,y)=>new Date(y.Date)-new Date(x.Date));
+    
+    document.getElementById("allData").innerHTML = all.map(x => `
+        <tr>
+            <td class="${x.type=='ขาย'?'green':x.type=='ซื้อเข้า'?'blue':'red'}">${x.type}</td>
+            <td>${x.Name}</td>
+            <td>${x.Price.toLocaleString()}</td>
+            <td>${x.Date}</td>
+            <td>${x.SlipURL ? `<img src="${x.SlipURL}" class="slip-preview" onclick="window.open('${x.SlipURL}')">` : '-'}</td>
+            <td><button class="btn-del" onclick="deleteTransaction(${x.rowIndex})">🗑 ลบ</button></td>
+        </tr>`).join("");
+    updateMonthSelect(all);
+}
+
+function renderStock() {
+    let sold = db.sells.map(x=>x.Name.trim().toLowerCase()); // Use Name
+    let stock = db.buys.filter(x=>!sold.includes(x.Name.trim().toLowerCase())); // Use Name
+    let key = document.getElementById("stockSearch").value.toLowerCase();
+    if(key) stock = stock.filter(x=>x.Name.toLowerCase().includes(key));
+    document.getElementById("stockList").innerHTML = stock.map(x=>`<tr><td>${x.Name}</td><td>${x.Date}</td><td>${x.Price.toLocaleString()}</td></tr>`).join("");
+}
+
+function renderMelt() {
+    document.getElementById("meltList").innerHTML = db.melts.map((x,i)=>`<li>${x} <span style="color:red;cursor:pointer;" onclick="del('melts',${i},renderMelt)">[ลบ]</span></li>`).join("");
+}
+function renderNotes() {
+    document.getElementById("noteList").innerHTML = db.notes.map((x,i)=>`<li>${x} <span style="color:red;cursor:pointer;" onclick="del('notes',${i},renderNotes)">[ลบ]</span></li>`).join("");
+}
+function del(arr,i,render) {
+    if(confirm("ลบรายการ?")) { db[arr].splice(i,1); saveToLocal(); render(); }
+}
+function updateMonthSelect(all) {
+    // Use Date from Sheet data
+    let m = [...new Set(all.map(x=>x.Date.toString().substr(0,7)))].sort().reverse();
+    let sel = document.getElementById("sumMonth");
+    let cur = sel.value;
+    sel.innerHTML = `<option value="">-- เลือกเดือน --</option>` + m.map(x=>`<option value="${x}">${x}</option>`).join("");
+    if(cur) sel.value = cur;
+}
+function calculateMonthly() {
+    let m = document.getElementById("sumMonth").value;
+    if(!m) return;
+    // Use Price and Date from Sheet data
+    let f = (arr)=>arr.filter(x=>x.Date.toString().startsWith(m)).reduce((a,b)=>a+b.Price,0);
+    let b=f(db.buys), s=f(db.sells), e=f(db.expenses);
+    let net = s-b-e;
+    document.getElementById("summaryResult").innerHTML = `ยอดขาย: ${s.toLocaleString()} | ซื้อ: ${b.toLocaleString()} | จ่าย: ${e.toLocaleString()} <br> <h2>สุทธิ: <span class="${net>=0?'green':'red'}">${net.toLocaleString()}</span></h2>`;
+}
+function searchAllData() {
+    let v = document.getElementById("searchAll").value.toLowerCase();
+    document.querySelectorAll("#allData tr").forEach(r => r.style.display = r.innerText.toLowerCase().includes(v)?"":"none");
+}
+
+window.onload = loadData;
+</script>
+
+</body>
+</html>
