@@ -575,11 +575,6 @@ tr:hover td { background: rgba(255,255,255,0.05); }
 
 <script>
 /* DATA STORE */
-// ----------------------------------------------------------------------
-// *** ใส่ URL ของ Google Apps Script Web App ที่ Deploy แล้ว ณ ตรงนี้ ***
-const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzfEeTfLaZHPKtImMT3N4xbd5oxW4Jfk7QsKIYTTgfir3k_GBzc3j7hnw8I00dIoKk/exec";
-// ----------------------------------------------------------------------
-
 let db = { buys: [], sells: [], expenses: [], melts: [], notes: [] };
 let capital = 0;
 let discordUrl = "";
@@ -615,76 +610,28 @@ const defaultConfig = {
 
 let config = {};
 
-/* GAS API HANDLER */
-
-// ฟังก์ชันสำหรับเรียกข้อมูลเริ่มต้น (เรียก doGet)
-async function fetchInitialData() {
-    try {
-        const res = await fetch(GAS_WEB_APP_URL);
-        const result = await res.json();
-        if (result.status === 'error') {
-            throw new Error(result.message);
-        }
-        return result;
-    } catch (error) {
-        console.error("Apps Script (doGet) Error:", error);
-        alert("เกิดข้อผิดพลาดในการดึงข้อมูลเริ่มต้น: " + error.message);
-        return null;
-    }
-}
-
-// ฟังก์ชันสำหรับส่งคำสั่งดำเนินการ (เรียก doPost)
-async function callAction(action, data = {}, successMsg = "ดำเนินการสำเร็จ!") {
-    try {
-        const payload = JSON.stringify({ action, ...data });
-        const res = await fetch(GAS_WEB_APP_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: payload
-        });
-        
-        const text = await res.text();
-        const result = JSON.parse(text);
-
-        if (result.status === 'error') {
-            throw new Error(result.message);
-        }
-        
-        // โหลดข้อมูลซ้ำหลังจากการดำเนินการสำเร็จ เพื่อให้ข้อมูลหน้าจออัปเดต
-        await loadData(false); 
-        if (successMsg) alert(successMsg + (result.message ? `\n(${result.message})` : ''));
-        return result;
-    } catch (error) {
-        console.error("Apps Script (doPost) Error:", error);
-        alert("เกิดข้อผิดพลาดในการดำเนินการ: " + error.message);
-        return { status: 'error', message: error.message };
-    }
-}
-
-
 /* INIT */
-async function loadData(initial = true) {
+function loadData() {
+    db.buys = JSON.parse(localStorage.getItem("buys") || "[]");
+    db.sells = JSON.parse(localStorage.getItem("sells") || "[]");
+    db.expenses = JSON.parse(localStorage.getItem("expenses") || "[]");
+    db.melts = JSON.parse(localStorage.getItem("melts") || "[]");
+    db.notes = JSON.parse(localStorage.getItem("notes") || "[]");
+    capital = Number(localStorage.getItem("capital") || 0);
+    discordUrl = localStorage.getItem("discordWebhook") || "";
     
-    // NEW LOGIC: Fetch from GAS
-    const gasData = await fetchInitialData();
-    if (!gasData) return;
+    let savedConfig = localStorage.getItem("config");
+    if(savedConfig) {
+        config = JSON.parse(savedConfig);
+        if(!config.pages || !config.menus) config = JSON.parse(JSON.stringify(defaultConfig));
+    } else {
+        config = JSON.parse(JSON.stringify(defaultConfig));
+    }
 
-    db.buys = gasData.buys || [];
-    db.sells = gasData.sells || [];
-    db.expenses = gasData.expenses || [];
-    db.melts = gasData.melts || [];
-    db.notes = gasData.notes || []; 
-    capital = Number(gasData.capital || 0);
-    discordUrl = gasData.discordWebhook || "";
-    // ถ้าไม่มี config ขั้นสูงจาก GAS ให้ใช้ค่าเริ่มต้น
-    config = gasData.advancedConfig && Object.keys(gasData.advancedConfig).length > 0
-             ? gasData.advancedConfig 
-             : JSON.parse(JSON.stringify(defaultConfig));
-    
-    // ต้องตรวจสอบและใส่ ID ให้รายการที่มีอยู่ หากยังไม่มี (สำหรับป้องกันความผิดพลาด)
     [...db.buys, ...db.sells, ...db.expenses].forEach(x => {
         if(!x.id) x.id = Date.now() + Math.random();
     });
+    saveToLocal();
 
     applyConfig();
     updateDashboard();
@@ -697,34 +644,59 @@ async function loadData(initial = true) {
     loadConfigToInputs();
 }
 
+function saveToLocal() {
+    localStorage.setItem("buys", JSON.stringify(db.buys));
+    localStorage.setItem("sells", JSON.stringify(db.sells));
+    localStorage.setItem("expenses", JSON.stringify(db.expenses));
+    localStorage.setItem("melts", JSON.stringify(db.melts));
+    localStorage.setItem("notes", JSON.stringify(db.notes));
+    localStorage.setItem("capital", capital);
+    localStorage.setItem("discordWebhook", discordUrl);
+    localStorage.setItem("config", JSON.stringify(config));
+    updateDashboard();
+}
 
-async function saveDiscordWebhook() {
-    const value = document.getElementById("discordWebhook").value;
-    await callAction('saveConfig', { 
-        key: 'DISCORD_WEBHOOK', 
-        value: value, 
-        isAdvanced: false 
-    }, "บันทึก Discord Webhook เรียบร้อย!");
-    discordUrl = value; // อัปเดตตัวแปร local ด้วย
+function saveDiscordWebhook() {
+    discordUrl = document.getElementById("discordWebhook").value;
+    saveToLocal();
+    alert("บันทึก Discord Webhook เรียบร้อย! ลองทดสอบทำรายการดูนะครับ");
 }
 
 /* DISCORD SENDER */
-// เปลี่ยนมาเรียก GAS Action แทนการยิง Webhook ตรงๆ
 async function sendToDiscord(title, desc, color) {
-    if(!discordUrl) return; 
-    // ใช้ callAction แต่ไม่ต้องแสดง Alert
-    await callAction('sendDiscord', { title, desc, color }, null); 
+    if(!discordUrl) return;
+    const payload = {
+        username: "Ignite System",
+        avatar_url: "https://cdn-icons-png.flaticon.com/512/1041/1041888.png",
+        embeds: [{
+            title: title,
+            description: desc,
+            color: color,
+            timestamp: new Date().toISOString()
+        }]
+    };
+    try {
+        await fetch(discordUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+    } catch(e) { console.error("Discord Error", e); }
 }
 
-async function clearAllData() {
-    if(confirm("ยืนยันการลบข้อมูล 'ทั้งหมด' ? (กู้คืนไม่ได้)")) {
-        // ส่ง alert ก่อนล้างข้อมูล
-        await sendToDiscord("⚠ แจ้งเตือนความปลอดภัย", "มีการกดปุ่มล้างข้อมูลทั้งหมดในระบบ!", 16711680);
-        
-        // เรียก GAS Action เพื่อล้างข้อมูล
-        await callAction('clearAllData', {}, "ล้างข้อมูลเรียบร้อย!");
-
-        // loadData ถูกเรียกใน callAction แล้ว จึงไม่ต้องเรียกซ้ำ
+function clearAllData() {
+    if(confirm("ยืนยันการลบข้อมูล 'ทั้งหมด' ?")) {
+        sendToDiscord("⚠ แจ้งเตือนความปลอดภัย", "มีการกดปุ่มล้างข้อมูลทั้งหมดในระบบ!", 16711680); // Red
+        db.buys = [];
+        db.sells = [];
+        db.expenses = [];
+        db.melts = [];
+        db.notes = [];
+        saveToLocal();
+        alert("ล้างข้อมูลเรียบร้อย!");
+        renderStock();
+        renderMelt();
+        renderNotes();
     }
 }
 
@@ -737,26 +709,26 @@ function openTab(tabId) {
 }
 
 function loadConfigToInputs() {
-    document.getElementById("conf_brand").value = config.brand || "";
-    document.getElementById("conf_fontsize").value = config.fontSize || "";
-    document.getElementById("conf_color").value = config.color || "";
-    document.getElementById("cf_m_home").value = config.menus.home || "";
-    document.getElementById("cf_m_buy").value = config.menus.buy || "";
-    document.getElementById("cf_m_sell").value = config.menus.sell || "";
-    document.getElementById("cf_m_stock").value = config.menus.stock || "";
-    document.getElementById("cf_m_melt").value = config.menus.melt || "";
-    document.getElementById("cf_m_exp").value = config.menus.exp || "";
-    document.getElementById("cf_m_note").value = config.menus.note || "";
-    document.getElementById("cf_m_sum").value = config.menus.sum || "";
+    document.getElementById("conf_brand").value = config.brand;
+    document.getElementById("conf_fontsize").value = config.fontSize;
+    document.getElementById("conf_color").value = config.color;
+    document.getElementById("cf_m_home").value = config.menus.home;
+    document.getElementById("cf_m_buy").value = config.menus.buy;
+    document.getElementById("cf_m_sell").value = config.menus.sell;
+    document.getElementById("cf_m_stock").value = config.menus.stock;
+    document.getElementById("cf_m_melt").value = config.menus.melt;
+    document.getElementById("cf_m_exp").value = config.menus.exp;
+    document.getElementById("cf_m_note").value = config.menus.note;
+    document.getElementById("cf_m_sum").value = config.menus.sum;
 
     const loadPage = (key, prefix) => {
         const p = config.pages[key];
-        document.getElementById(`cf_${prefix}_title`).value = p.title || "";
-        document.getElementById(`cf_${prefix}_lbl_name`).value = p.labels.name || "";
-        document.getElementById(`cf_${prefix}_lbl_price`).value = p.labels.price || "";
-        document.getElementById(`cf_${prefix}_lbl_date`).value = p.labels.date || "";
+        document.getElementById(`cf_${prefix}_title`).value = p.title;
+        document.getElementById(`cf_${prefix}_lbl_name`).value = p.labels.name;
+        document.getElementById(`cf_${prefix}_lbl_price`).value = p.labels.price;
+        document.getElementById(`cf_${prefix}_lbl_date`).value = p.labels.date;
         document.getElementById(`cf_${prefix}_show_date`).checked = p.show.date;
-        document.getElementById(`cf_${prefix}_lbl_slip`).value = p.labels.slip || "";
+        document.getElementById(`cf_${prefix}_lbl_slip`).value = p.labels.slip;
         document.getElementById(`cf_${prefix}_show_slip`).checked = p.show.slip;
     };
     loadPage('buy', 'buy');
@@ -764,8 +736,7 @@ function loadConfigToInputs() {
     loadPage('expense', 'exp');
 }
 
-async function saveAdvancedConfig() {
-    // 1. Update local config object
+function saveAdvancedConfig() {
     config.brand = document.getElementById("conf_brand").value;
     config.fontSize = document.getElementById("conf_fontsize").value;
     config.color = document.getElementById("conf_color").value;
@@ -791,17 +762,12 @@ async function saveAdvancedConfig() {
     savePage('sell', 'sell');
     savePage('expense', 'exp');
 
-    // 2. Save entire config object to GAS under ADVANCED_CONFIG key
-    await callAction('saveConfig', { 
-        key: 'ADVANCED_CONFIG', 
-        value: config, 
-        isAdvanced: true 
-    }, "บันทึกการตั้งค่าแล้ว!");
-
+    saveToLocal();
     applyConfig();
+    alert("บันทึกการตั้งค่าแล้ว!");
 }
 
-async function applyConfig() {
+function applyConfig() {
     document.documentElement.style.setProperty('--primary', config.color);
     document.documentElement.style.setProperty('--global-font-size', config.fontSize + 'px');
     document.getElementById("brandName").innerText = config.brand;
@@ -833,17 +799,10 @@ async function applyConfig() {
     applyPage('expense', 'exp');
 }
 
-async function resetConfig() {
+function resetConfig() {
     if(confirm("รีเซ็ตการตั้งค่าทั้งหมด?")) {
         config = JSON.parse(JSON.stringify(defaultConfig));
-        
-        // Save the default config to GAS
-        await callAction('saveConfig', { 
-            key: 'ADVANCED_CONFIG', 
-            value: config, 
-            isAdvanced: true 
-        }, "รีเซ็ตการตั้งค่าสำเร็จ!");
-
+        saveToLocal();
         loadConfigToInputs();
         applyConfig();
     }
@@ -860,13 +819,10 @@ function toggleSidebar(forceState) {
     if(forceState === false) sb.classList.remove("open");
     else sb.classList.toggle("open");
 }
-async function saveCapital() {
-    const value = Number(document.getElementById("setCapital").value);
-    await callAction('saveConfig', { 
-        key: 'CAPITAL', 
-        value: value, 
-        isAdvanced: false 
-    }, "บันทึกเงินทุนแล้ว");
+function saveCapital() {
+    capital = Number(document.getElementById("setCapital").value);
+    saveToLocal();
+    alert("บันทึกเงินทุนแล้ว");
 }
 function previewFile(inputId, nameSpanId) {
     const file = document.getElementById(inputId).files[0];
@@ -907,68 +863,49 @@ async function addTransaction(type) {
     let labelMap = { buy:"ซื้อเข้า", sell:"ขาย", expense:"เบิกจ่าย" };
     let discordColor = { buy: 3447003, sell: 5763719, expense: 15548997 }; // Blue, Green, Red
     
-    const entryId = Date.now();
+    let entry = { id: Date.now(), type: labelMap[type], name, price, date, slip: slipImg };
+    if(type === 'buy') db.buys.push(entry);
+    else if(type === 'sell') db.sells.push(entry);
+    else db.expenses.push(entry);
+
+    saveToLocal();
+
+    // Notify Discord
+    let msg = `รายการ: ${name}\nราคา: ${price.toLocaleString()} บาท\nวันที่: ${date}`;
+    await sendToDiscord(`🔔 ทำรายการ ${labelMap[type]}`, msg, discordColor[type]);
+
+    alert("บันทึกสำเร็จ!");
     
-    const gasTypeMap = { buy: "Buys", sell: "Sells", expense: "Expenses" };
-    const sheetName = gasTypeMap[type];
-
-    const result = await callAction('addTransaction', { 
-        type: sheetName,
-        data: { id: entryId, name, price, date, slip: slipImg }
-    }, "บันทึกสำเร็จ!");
-
-    if (result.status !== 'error') {
-        // Notify Discord
-        let msg = `รายการ: ${name}\nราคา: ${price.toLocaleString()} บาท\nวันที่: ${date}`;
-        await sendToDiscord(`🔔 ทำรายการ ${labelMap[type]}`, msg, discordColor[type]);
-
-        // Clear fields and switch view
-        document.getElementById(fields.name).value = "";
-        document.getElementById(fields.price).value = "";
-        document.getElementById(fields.slip).value = "";
-        document.querySelector(`#${type} .file-upload span`).innerText = "เลือกรูปภาพ...";
-        showPage('home');
-    }
+    document.getElementById(fields.name).value = "";
+    document.getElementById(fields.price).value = "";
+    document.getElementById(fields.slip).value = "";
+    document.querySelector(`#${type} .file-upload span`).innerText = "เลือกรูปภาพ...";
+    showPage('home');
 }
 
-async function deleteTransaction(id) {
+function deleteTransaction(id) {
     if(!confirm("ต้องการลบรายการนี้ใช่หรือไม่?")) return;
     
-    // Find item details before deleting from server
+    // Find item to log details before deleting
     let item = [...db.buys, ...db.sells, ...db.expenses].find(x => x.id == id);
     if(item) {
-        await sendToDiscord("⚠ มีการลบรายการ", `ลบ: ${item.name}\nยอดเงิน: ${item.price}\nประเภท: ${item.type}`, 16711680); 
-    }
-    
-    const typeMap = { 'ซื้อเข้า': 'Buys', 'ขาย': 'Sells', 'เบิกจ่าย': 'Expenses' };
-    const sheetName = typeMap[item.type];
-
-    if (!sheetName) {
-        alert("ไม่พบประเภทรายการที่จะลบ!");
-        return;
+        sendToDiscord("⚠ มีการลบรายการ", `ลบ: ${item.name}\nยอดเงิน: ${item.price}\nประเภท: ${item.type}`, 16711680); // Red Warning
     }
 
-    await callAction('deleteTransaction', { type: sheetName, id: id }, "ลบรายการสำเร็จ!");
-
-    // loadData ถูกเรียกใน callAction แล้ว จึงไม่ต้องเรียกซ้ำ
+    db.buys = db.buys.filter(x => x.id != id);
+    db.sells = db.sells.filter(x => x.id != id);
+    db.expenses = db.expenses.filter(x => x.id != id);
+    saveToLocal();
 }
 
-async function addGenericItem(arr, id, render) {
+function addGenericItem(arr, id, render) {
     let val = document.getElementById(id).value;
     if(!val) return;
-    
-    const sheetMap = { 'melts': 'Melts', 'notes': 'Notes' };
-
-    const result = await callAction('addGenericItem', { 
-        sheetName: sheetMap[arr], 
-        note: val 
-    }, "เพิ่มรายการสำเร็จ!");
-
-    if (result.status !== 'error') {
-        await sendToDiscord("📝 บันทึก/หลอม", `เพิ่มรายการ: ${val}`, 16776960); // Yellow
-        document.getElementById(id).value="";
-        render(); // re-render list
-    }
+    db[arr].push(val);
+    saveToLocal();
+    sendToDiscord("📝 บันทึก/หลอม", `เพิ่มรายการ: ${val}`, 16776960); // Yellow
+    document.getElementById(id).value="";
+    render();
 }
 
 function updateDashboard() {
@@ -1007,29 +944,14 @@ function renderStock() {
 }
 
 function renderMelt() {
-    // Note: db.melts is now an array of strings
     document.getElementById("meltList").innerHTML = db.melts.map((x,i)=>`<li>${x} <span style="color:red;cursor:pointer;" onclick="del('melts',${i},renderMelt)">[ลบ]</span></li>`).join("");
 }
 function renderNotes() {
-    // Note: db.notes is now an array of strings
     document.getElementById("noteList").innerHTML = db.notes.map((x,i)=>`<li>${x} <span style="color:red;cursor:pointer;" onclick="del('notes',${i},renderNotes)">[ลบ]</span></li>`).join("");
 }
-
-async function del(arr, i, render) {
-    if(!confirm("ลบรายการ?")) return;
-    
-    const sheetMap = { 'melts': 'Melts', 'notes': 'Notes' };
-    
-    const result = await callAction('deleteGenericItem', { 
-        sheetName: sheetMap[arr], 
-        index: i
-    }, "ลบรายการสำเร็จ!");
-
-    if (result.status !== 'error') {
-        render(); 
-    }
+function del(arr,i,render) {
+    if(confirm("ลบรายการ?")) { db[arr].splice(i,1); saveToLocal(); render(); }
 }
-
 function updateMonthSelect(all) {
     let m = [...new Set(all.map(x=>x.date.substr(0,7)))].sort().reverse();
     let sel = document.getElementById("sumMonth");
@@ -1050,9 +972,65 @@ function searchAllData() {
     document.querySelectorAll("#allData tr").forEach(r => r.style.display = r.innerText.toLowerCase().includes(v)?"":"none");
 }
 
-window.onload = () => loadData(true);
+window.onload = loadData;
+
+
+/* --- GitHub Integration Full Override Added --- */
+const GITHUB_USER = "jadum2606";
+const GITHUB_REPO = "IGNITE";
+const GITHUB_TOKEN = "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";
+
+async function githubLoad(filename){
+    const url = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/${filename}`;
+    const r = await fetch(url);
+    return await r.json();
+}
+
+async function githubSave(filename, data){
+    const api = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${filename}`;
+    const getFile = await fetch(api,{headers:{Authorization:`Bearer ${GITHUB_TOKEN}`}}).then(r=>r.json());
+    const contentEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(data,null,2))));
+    await fetch(api,{
+        method:"PUT",
+        headers:{Authorization:`Bearer ${GITHUB_TOKEN}`,"Content-Type":"application/json"},
+        body:JSON.stringify({message:"update "+filename,content:contentEncoded,sha:getFile.sha})
+    });
+}
+
+async function loadData(){
+    db.buys = await githubLoad("buys.json");
+    db.sells = await githubLoad("sells.json");
+    db.expenses = await githubLoad("expenses.json");
+    db.melts = await githubLoad("melts.json");
+    db.notes = await githubLoad("notes.json");
+
+    let cfg = await githubLoad("config.json");
+    config = Object.keys(cfg).length? cfg : defaultConfig;
+
+    capital = config.capital || 0;
+    discordUrl = config.discord || "";
+
+    applyConfig(); updateDashboard(); renderStock(); renderMelt(); renderNotes();
+    loadConfigToInputs();
+}
+
+async function saveToLocal(){
+    await githubSave("buys.json", db.buys);
+    await githubSave("sells.json", db.sells);
+    await githubSave("expenses.json", db.expenses);
+    await githubSave("melts.json", db.melts);
+    await githubSave("notes.json", db.notes);
+
+    config.capital = capital;
+    config.discord = discordUrl;
+    await githubSave("config.json", config);
+
+    updateDashboard();
+}
+/* --- End GitHub Override --- */
+
+
 </script>
 
 </body>
-
 </html>
