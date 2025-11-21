@@ -611,20 +611,7 @@ const defaultConfig = {
 let config = {};
 
 /* INIT */
-function loadData() {
-    db.buys = JSON.parse(localStorage.getItem("buys") || "[]");
-    db.sells = JSON.parse(localStorage.getItem("sells") || "[]");
-    db.expenses = JSON.parse(localStorage.getItem("expenses") || "[]");
-    db.melts = JSON.parse(localStorage.getItem("melts") || "[]");
-    db.notes = JSON.parse(localStorage.getItem("notes") || "[]");
-    capital = Number(localStorage.getItem("capital") || 0);
-    discordUrl = localStorage.getItem("discordWebhook") || "";
-    
-    let savedConfig = localStorage.getItem("config");
-    if(savedConfig) {
-        config = JSON.parse(savedConfig);
-        if(!config.pages || !config.menus) config = JSON.parse(JSON.stringify(defaultConfig));
-    } else {
+else {
         config = JSON.parse(JSON.stringify(defaultConfig));
     }
 
@@ -642,18 +629,6 @@ function loadData() {
     document.getElementById("setCapital").value = capital;
     document.getElementById("discordWebhook").value = discordUrl;
     loadConfigToInputs();
-}
-
-function saveToLocal() {
-    localStorage.setItem("buys", JSON.stringify(db.buys));
-    localStorage.setItem("sells", JSON.stringify(db.sells));
-    localStorage.setItem("expenses", JSON.stringify(db.expenses));
-    localStorage.setItem("melts", JSON.stringify(db.melts));
-    localStorage.setItem("notes", JSON.stringify(db.notes));
-    localStorage.setItem("capital", capital);
-    localStorage.setItem("discordWebhook", discordUrl);
-    localStorage.setItem("config", JSON.stringify(config));
-    updateDashboard();
 }
 
 function saveDiscordWebhook() {
@@ -1029,6 +1004,33 @@ async function saveToLocal(){
 }
 /* --- End GitHub Override --- */
 
+
+
+/* GitHub Integration Override */
+async function loadData(){
+    db.buys = await githubLoad("buys.json");
+    db.sells = await githubLoad("sells.json");
+    db.expenses = await githubLoad("expenses.json");
+    db.melts = await githubLoad("melts.json");
+    db.notes = await githubLoad("notes.json");
+    let cfg = await githubLoad("config.json");
+    config = Object.keys(cfg).length? cfg : defaultConfig;
+    capital = config.capital || 0;
+    discordUrl = config.discord || "";
+    applyConfig(); updateDashboard(); renderStock(); renderMelt(); renderNotes();
+    loadConfigToInputs();
+}
+async function saveToLocal(){
+    await githubSave("buys.json", db.buys);
+    await githubSave("sells.json", db.sells);
+    await githubSave("expenses.json", db.expenses);
+    await githubSave("melts.json", db.melts);
+    await githubSave("notes.json", db.notes);
+    config.capital = capital;
+    config.discord = discordUrl;
+    await githubSave("config.json", config);
+    updateDashboard();
+}
 
 </script>
 
